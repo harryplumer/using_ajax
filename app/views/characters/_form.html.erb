@@ -1,7 +1,7 @@
 <div id="char-form">
   <%= form_for [@game, @character] do |f| %>
     <%= f.label :name %>
-    <%= f.text_field :name %>
+    <%= f.text_field :name, required: true %>
     <br />
     <%= f.label :power %>
     <%= f.text_field :power %>
