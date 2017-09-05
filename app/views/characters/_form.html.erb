@@ -1,0 +1,11 @@
+<div id="char-form">
+  <%= form_for [@game, @character] do |f| %>
+    <%= f.label :name %>
+    <%= f.text_field :name %>
+    <br />
+    <%= f.label :power %>
+    <%= f.text_field :power %>
+    <br />
+    <%= f.submit nil, class: "btn" %>
+  <% end %>
+</div>
