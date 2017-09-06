@@ -1,11 +1,11 @@
 <li>
   <div
-    class="game-item"
+    class="games-item"
     data-id=<%= game.id %>
     data-name="<%= game.name %>"
   >
     <%= game.name %> - <%= game.description %>
   </div>
-  <button class="btn edit-game">Edit</button>
-  <button class="btn delete-game">Delete</button>
+  <button class="btn edit" data-id=<%= game.id %> data-pane="games">Edit</button>
+  <button class="btn delete" data-id=<%= game.id %> data-pane="games">Delete</button>
 </li>

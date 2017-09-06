@@ -1,133 +1,103 @@
-var currentGame = {};
-var showForm = false;
-var editingGame;
-
-var currentChar = {}
-var showCharForm = false
-var editingChar
+let current = {games: 0, characters: 0};
+let showForm = {games: false, characters: false}
+let editing = {games: null, characters: null}
 
 $(document).ready( function() {
-
-  function getGame(id) {
-    $.ajax({
-      url: '/games/' + id,
-      type: 'GET'
-    }).done( function(game) {
-      if (editingGame) {
-        var li = $("[data-id='" + id + "'").parents('li');
-        $(li).replaceWith(game);
-        editingGame = null;
-      } else {
-        $('#games-list').append(game);
-      }
-    });
-  }
-
-  function getChar(gameId, id){
-    $.ajax({
-      url: '/games/' + gameId + '/characters/' + id,
-      type: 'GET'
-    }).done( function(char) {
-      if (editingChar) {
-        var li = $("[data-id='" + id + "'").parents('li');
-        $(li).replaceWith(char);
-        editingChar = null;
-      } else {
-        $('#characters').append(char);
-      }
-    });
-  }
+  //RENDERS GAMES OR CHARACTERS
+  getItem = (pane, params) => {
   
-
-  function toggle() {
-    showForm = !showForm;
-    $('#game-form').remove();
-    $('#games-list').toggle();
-
-    if (showForm) {
-      let data = {};
-      if (editingGame) 
-        data.id = editingGame;
-      $.ajax({
-        url: "/game_form",
-        type: 'GET',
-        data: data
-      }).done( function(html) {
-        $('#toggle').after(html);
-      });
+    let url = `/games/${params.games}`
+    let editId = editing[`${pane}`]
+    let retId = params[`${pane}`]
+    
+    if (pane === "characters")
+      url = url + `/characters/${params.characters}`
+      
+    $.ajax({
+      url: url,
+      type: 'GET'
+    }).done( (data) => {
+      if (editId) {
+        var li = $("[data-id='" + retId + "'").parents('li');
+        $(li).replaceWith(data);
+        if (pane === "characters")
+          editing.characters = null
+        else
+          editing.games = null
+      }
+      else 
+        $(`#${pane}-list`).append(data);
+      })
     }
-  }
 
-  function toggleChar() {
-    showCharForm = !showCharForm;
-    $('#char-form').remove();
-    $('#characters').toggle();
+  //SHOWS AND HIDES FORMS 
+  toggle = (pane) => {
+    showForm[`${pane}`] = !showForm[`${pane}`]
+    $(`#${pane}-form`).remove()
+    $(`#${pane}`).toggle()
 
-    if (showCharForm) {
-      if (Object.getOwnPropertyNames(currentGame).length <= 0){
+    if (showForm[`${pane}`]){      
+      if((showForm.characters) && (current.games == 0)){
         alert("Please Select A Game From The Left Pane")
-        showCharForm = !showCharForm;
-        $('#char-form').remove();
+        showForm.characters = false
+        $('#characters-form').remove();
         $('#characters').toggle();
         return
       }
-
-      let data = {};
-      data.game_id = currentGame.id;
-      if (editingChar) 
-        data.id = editingChar;
+      
+      let data = {}
+      if (pane === "characters")
+        data.game_id = current.games
+      if (editing[`${pane}`]) 
+        data.id = editing[`${pane}`]
+      
+      let url = `/${pane}_form`
+      
       $.ajax({
-        url: "/char_form",
+        url: `/${pane}_form`,
         type: 'GET',
         data: data
-      }).done( function(html) {
-        $('#toggle-char').after(html);
-      });
+      }).done( (html) => {
+        $(`#toggle-${pane}`).after(html);
+      })
     }
   }
 
-  //EDIT AND DELETE FUNCTIONS
-  $(document).on('click', '.edit-game', function() {
-    editingGame = $(this).siblings('.game-item').data().id;
-    toggle();
-  });
+  //CLICK HANDLERS FOR EDIT/DELETE
+  $(document).on('click', '.edit', function(){
+    let pane = this.dataset.pane
+    editing[`${pane}`] = this.dataset.id
+    toggle(pane)
+  })
 
-  $(document).on('click', '.delete-game', function() {
-    var id = $(this).siblings('.game-item').data().id
+  $(document).on('click', '.delete', function() {
+    let pane = this.dataset.pane
+    let id = this.dataset.id
+    let url = ""
+    if (pane === "games")
+      url = `/games/${id}`
+    else
+      url = `/games/${current.games}/characters/${id}`
+
     $.ajax({
-      url: '/games/' + id,
+      url: url,
       type: 'DELETE'
-    }).done( function() {
-      var row = $("[data-id='" + id + "'").parents('li');
-      row.remove();
-    });
-  });
+    }).done( () => { $(this).parents('li').remove() })
+  })
 
-  $(document).on('click', '.edit-char', function() {
-    editingChar = $(this).siblings('.char-item').data().id;
-    toggleChar();
-  });
-
-  $(document).on('click', '.delete-char', function() {
-    var id = $(this).siblings('.char-item').data().id
-    $.ajax({
-      url: '/games/'+currentGame.id+'/characters/'+ id,
-      type: 'DELETE'
-    }).done( function() {
-      var row = $("[data-id='" + id + "'").parents('li');
-      row.remove();
-    });
-  });
-
-  //FORM SUBMISSION BUTTON CLICK HANDLERS
-  $(document).on('submit', '#game-form form', function(e) {
+  //CLICK HANDLERS FOR FORM SUBMITS
+  $(document).on('submit', '.std-form form', function(e) {
     e.preventDefault();
+    let pane = $(this).parents('div').data().pane
     var params = $(this).serializeArray();
-    var url = '/games';
+    let url = '/games/'
     var method = 'POST';
+    
+    if (pane === "characters")
+      url = url + `${current.games}/characters`
 
-    if (editingGame) {
-      url = url + '/' + editingGame;
+    if (editing[`${pane}`]) {
+      url = url + '/' + editing[`${pane}`];
       method = 'PUT'
     }
 
@@ -135,61 +105,42 @@ $(document).ready( function() {
       url: url,
       type: method,
       data: params
-    }).done( function(game) {
-      toggle();
-      getGame(game.id);
+    }).done( (data) => {
+      let passParams = {}
+      if (pane === "games")
+        passParams.games = data.id
+      else {
+        passParams.games = current.games
+        passParams.characters = data.id
+      }
+      toggle(pane)
+      getItem(pane, passParams)
     }).fail( function(err) {
-      alert(err.responseJSON.errors);
-    });
-  });
-
-  $(document).on('submit', '#char-form form', function(e) {
-    e.preventDefault();
-    var params = $(this).serializeArray();
-    var url = '/games/'+currentGame.id+'/characters';
-    var method = 'POST';
-
-    if (editingChar) {
-      url = url + '/' + editingChar;
-      method = 'PUT'
-    }
-
-    $.ajax({
-      url: url,
-      type: method,
-      data: params
-    }).done( function(char) {
-      toggleChar();
-      getChar(currentGame.id, char.id);
-    }).fail( function(err) {
-      alert(err.responseJSON.errors);
-    });
-  });
-
-
-  //SHOW FORM BUTTON CLICK HANDLERS
-  $('#toggle').on('click', function() {
-    toggle();
-  });
-
-  $('#toggle-char').on('click', function() {
-    toggleChar();
-  });
-
-  //SHOW CHARACTERS IN RIGHT PANE CLICK HANDLER
-  $(document).on('click', '.game-item', function() {
-    currentGame.id = this.dataset.id
-    currentGame.name = this.dataset.name
-    $.ajax({
-      url: '/games/' + currentGame.id + '/characters/',
-      type: 'GET'
-    }).done( function(characters) {
-      $('#game').text('Characters in ' + currentGame.name);
-      var list = $('#characters');
-      list.empty();
-      characters.forEach( function(char) {
-        getChar(currentGame.id, char.id)
-      })
+      alert(err.responseJSON.errors)
     })
-  });
-});
+  })
+
+  //CLICK HANDLERS FOR SHOW FORM BUTTONS
+  $('.toggle-button').on('click', function(){
+    toggle($(this).data().pane)
+  })
+
+  //CLICK HANDLER FOR INDIVIDUAL GAMES TO SHOW CHARS IN RIGHT PANE
+  $(document).on('click', '.games-item', function() {
+    current.games = this.dataset.id
+    let insertName = this.dataset.name
+    $.ajax({
+      url: '/games/' + current.games + '/characters/',
+      type: 'GET'
+    }).done( (characters) => {
+      $('#game').text('Characters in ' + insertName);
+      $('#characters-list').empty()
+      let passParams = {}
+      passParams.games = current.games
+      for(char of characters){
+        passParams.characters = char.id
+        getItem("characters", passParams)
+      }
+    })
+  })
+})

@@ -3,7 +3,7 @@
 <div class="row">
   <div class="col s12 m6">
     <h3>Games</h3>
-    <button class="btn" id="toggle">Show Form</button>
+    <button class="btn toggle-button" id="toggle-games" data-pane="games">Show Form</button>
     <ul id="games-list">
       <% @games.each do |game| %>
         <%= render partial: 'game', locals: { game: game } %>
@@ -12,7 +12,7 @@
   </div>
   <div class="col s12 m6">
     <h3 id="game">Characters In Game</h3>
-    <button class="btn" id="toggle-char">Show Form</button>
-    <ul id="characters"></ul>
+    <button class="btn toggle-button" id="toggle-characters" data-pane="characters">Show Form</button>
+    <ul id="characters-list"></ul>
   </div>
 </div>
